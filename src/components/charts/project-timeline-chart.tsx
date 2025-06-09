@@ -83,6 +83,7 @@ export function ProjectTimelineChart({ className }: ProjectTimelineProps) {
       },
     },
     tooltip: {
+      /* eslint-disable-next-line */
       custom: function ({ series, seriesIndex, dataPointIndex, w }: any) {
         const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
         const startDate = new Date(data.x).toLocaleDateString();

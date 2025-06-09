@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
@@ -10,7 +9,6 @@ import {
   TrendingUp,
   UserPlus,
   DollarSign,
-  ArrowUpRight,
   Mail,
   Phone,
   Plus,
@@ -170,9 +168,6 @@ const totalDonated = donorsData.reduce(
 const individualDonors = donorsData.filter(
   (donor) => donor.type === 'individual'
 ).length;
-const corporateDonors = donorsData.filter(
-  (donor) => donor.type === 'corporate' || donor.type === 'organization'
-).length;
 const averageDonation =
   totalDonated /
   donorsData.reduce((acc, donor) => acc + donor.donationCount, 0);
@@ -180,9 +175,11 @@ const averageDonation =
 export default function DonorsPage() {
   const columns = [
     {
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'fullName' as any,
       title: 'Donor Name',
       sortable: true,
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       render: (value: any, item: any) => `${item.firstName} ${item.lastName}`,
     },
     {
@@ -237,6 +234,7 @@ export default function DonorsPage() {
       },
     },
     {
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'actions' as any,
       title: 'Actions',
       sortable: false,

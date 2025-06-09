@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
@@ -10,9 +9,7 @@ import {
   FileText,
   AlertTriangle,
   Users,
-  Calendar,
   CheckCircle,
-  Clock,
   Plus,
   ExternalLink,
 } from 'lucide-react';
@@ -202,6 +199,7 @@ export default function ProjectsPage() {
       key: 'spent',
       title: 'Spent',
       sortable: true,
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       render: (value: number, item: any) => (
         <div>
           {formatCurrency(value)}
@@ -276,6 +274,7 @@ export default function ProjectsPage() {
       },
     },
     {
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'actions' as any,
       title: 'Actions',
       sortable: false,

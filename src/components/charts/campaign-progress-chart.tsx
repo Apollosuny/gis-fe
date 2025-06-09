@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
 
 // Dynamic import to prevent SSR issues with ApexCharts
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });

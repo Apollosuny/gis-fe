@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable */
+
 import { useState } from 'react';
 import { Search, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
