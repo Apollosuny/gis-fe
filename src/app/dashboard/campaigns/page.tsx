@@ -5,128 +5,103 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
 import { FilterableTable } from '@/components/ui/filterable-table';
 import { Target, Users, TrendingUp, Calendar, Plus, Mail } from 'lucide-react';
+import { useState } from 'react';
+import { Campaign, useGetCampaigns } from '@/lib/hooks/use-campaigns';
 
-// Mock data
-const campaignsData = [
-  {
-    id: '1',
-    name: 'Clean Water Initiative',
-    startDate: '2025-01-15',
-    endDate: '2025-07-15',
-    target: 50000,
-    raised: 42500,
-    donors: 215,
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Education for All',
-    startDate: '2025-03-01',
-    endDate: '2025-09-01',
-    target: 75000,
-    raised: 48750,
-    donors: 342,
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Healthcare Access',
-    startDate: '2025-02-10',
-    endDate: '2025-05-10',
-    target: 30000,
-    raised: 30000,
-    donors: 187,
-    status: 'completed',
-  },
-  {
-    id: '4',
-    name: 'Community Garden Project',
-    startDate: '2025-04-01',
-    endDate: '2025-10-01',
-    target: 15000,
-    raised: 8250,
-    donors: 93,
-    status: 'active',
-  },
-  {
-    id: '5',
-    name: 'Youth Leadership Program',
-    startDate: '2025-05-15',
-    endDate: '2025-11-15',
-    target: 25000,
-    raised: 12500,
-    donors: 125,
-    status: 'active',
-  },
-  {
-    id: '6',
-    name: 'Emergency Relief Fund',
-    startDate: '2024-12-01',
-    endDate: '2025-03-01',
-    target: 100000,
-    raised: 95000,
-    donors: 523,
-    status: 'completed',
-  },
-  {
-    id: '7',
-    name: 'Arts and Culture Festival',
-    startDate: '2025-07-01',
-    endDate: '2025-09-30',
-    target: 35000,
-    raised: 0,
-    donors: 0,
-    status: 'planned',
-  },
-  {
-    id: '8',
-    name: 'Senior Care Initiative',
-    startDate: '2024-11-15',
-    endDate: '2025-05-15',
-    target: 45000,
-    raised: 40500,
-    donors: 276,
-    status: 'active',
-  },
-];
+// Prepare campaign data for the table
+interface CampaignTableItem {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  target: number;
+  raised: number;
+  donors: number;
+  status: string;
+}
 
-// Format currency
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
+const CampaignsPage = () => {
+  const { data: campaigns, isLoading, isError } = useGetCampaigns();
 
-// Format date
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
+  // Transform API data to table format
+  const campaignsData: CampaignTableItem[] = campaigns?.map(
+    (campaign: Campaign) => {
+      const totalRaised =
+        campaign.donations?.reduce(
+          (sum: number, donation: { amount: number }) => sum + donation.amount,
+          0
+        ) || 0;
 
-// Calculate summary stats
-const totalTargetAmount = campaignsData.reduce(
-  (acc, campaign) => acc + campaign.target,
-  0
-);
-const totalRaisedAmount = campaignsData.reduce(
-  (acc, campaign) => acc + campaign.raised,
-  0
-);
-const totalDonors = campaignsData.reduce(
-  (acc, campaign) => acc + campaign.donors,
-  0
-);
-const activeCampaigns = campaignsData.filter(
-  (campaign) => campaign.status === 'active'
-).length;
+      return {
+        id: campaign.id,
+        name: campaign.name,
+        startDate: new Date(campaign.start_date).toLocaleDateString(),
+        endDate: new Date(campaign.end_date).toLocaleDateString(),
+        target: campaign.target_amount,
+        raised: totalRaised,
+        donors: campaign.donations?.length || 0,
+        status: campaign.status.toLowerCase(),
+      };
+    }
+  ) || [
+    // Fallback data for preview when no campaigns are loaded
+    {
+      id: '1',
+      name: 'Clean Water Initiative',
+      startDate: '2025-01-15',
+      endDate: '2025-07-15',
+      target: 50000,
+      raised: 42500,
+      donors: 215,
+      status: 'active',
+    },
+    {
+      id: '2',
+      name: 'Education for All',
+      startDate: '2025-03-01',
+      endDate: '2025-09-01',
+      target: 75000,
+      raised: 48750,
+      donors: 342,
+      status: 'active',
+    },
+  ];
 
-export default function CampaignsPage() {
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  // Calculate summary stats with proper typing
+  const totalTargetAmount = campaignsData.reduce(
+    (acc: number, campaign: CampaignTableItem) => acc + campaign.target,
+    0
+  );
+  const totalRaisedAmount = campaignsData.reduce(
+    (acc: number, campaign: CampaignTableItem) => acc + campaign.raised,
+    0
+  );
+  const totalDonors = campaignsData.reduce(
+    (acc: number, campaign: CampaignTableItem) => acc + campaign.donors,
+    0
+  );
+  const activeCampaigns = campaignsData.filter(
+    (campaign: CampaignTableItem) => campaign.status === 'active'
+  ).length;
   const columns = [
     {
       key: 'name',
@@ -297,4 +272,6 @@ export default function CampaignsPage() {
       </motion.div>
     </div>
   );
-}
+};
+
+export default CampaignsPage;

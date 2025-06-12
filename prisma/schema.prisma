@@ -1,0 +1,234 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models based on the database diagram
+
+// Donor table
+model Donor {
+  id           String     @id @default(uuid())
+  name         String
+  email        String?    @unique
+  phone        String?
+  type         String     // Individual, Corporation, etc.
+  join_date    DateTime   @default(now())
+  
+  // Relations
+  donations    Donation[]
+
+  @@map("donors")
+}
+
+// Donation table
+model Donation {
+  id           String     @id @default(uuid())
+  donor_id     String
+  campaign_id  String?
+  amount       Float
+  date         DateTime   @default(now())
+  method       String     // Credit Card, Bank Transfer, etc.
+  
+  // Relations
+  donor        Donor      @relation(fields: [donor_id], references: [id])
+  campaign     Campaign?  @relation(fields: [campaign_id], references: [id])
+
+  @@map("donations")
+}
+
+// Campaign table
+model Campaign {
+  id             String     @id @default(uuid())
+  name           String
+  description    String?
+  start_date     DateTime
+  end_date       DateTime
+  target_amount  Float
+  status         String     // Active, Completed, Planned, etc.
+  
+  // Relations
+  donations      Donation[]
+  projects       Project[]
+  campaignReports CampaignReport[]
+  campaignFinancialRecords CampaignFinancialRecord[]
+
+  @@map("campaigns")
+}
+
+// Project table
+model Project {
+  id             String     @id @default(uuid())
+  name           String
+  description    String?
+  start_date     DateTime
+  end_date       DateTime
+  status         String     // Active, Completed, Planned, etc.
+  
+  // Relations
+  campaign_id    String?
+  campaign       Campaign?  @relation(fields: [campaign_id], references: [id])
+  projectFinancialRecords ProjectFinancialRecord[]
+  projectBeneficiaries ProjectBeneficiary[]
+  tasks          Task[]
+  projectReports ProjectReport[]
+  kpis           KPI[]
+
+  @@map("projects")
+}
+
+// Beneficiary table
+model Beneficiary {
+  id              String     @id @default(uuid())
+  name            String
+  demographic_info Json?     // Structured data about beneficiaries
+  contact_info    Json?     // Contact information
+  
+  // Relations
+  projectBeneficiaries ProjectBeneficiary[]
+
+  @@map("beneficiaries")
+}
+
+// Project_Beneficiary junction table
+model ProjectBeneficiary {
+  id              String     @id @default(uuid())
+  project_id      String
+  beneficiary_id  String
+  
+  // Relations
+  project         Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  beneficiary     Beneficiary @relation(fields: [beneficiary_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, beneficiary_id])
+  @@map("project_beneficiaries")
+}
+
+// Instead of a polymorphic relation, we'll create separate tables for each owner type
+// Campaign Financial Record table
+model CampaignFinancialRecord {
+  id              String     @id @default(uuid())
+  campaign_id     String
+  date            DateTime   @default(now())
+  type            String     // Income, Expense, etc.
+  amount          Float
+  description     String?
+  
+  // Relations
+  campaign        Campaign   @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@map("campaign_financial_records")
+}
+
+// Project Financial Record table
+model ProjectFinancialRecord {
+  id              String     @id @default(uuid())
+  project_id      String
+  date            DateTime   @default(now())
+  type            String     // Income, Expense, etc.
+  amount          Float
+  description     String?
+  
+  // Relations
+  project         Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@map("project_financial_records")
+}
+
+// KPI table
+model KPI {
+  id              String     @id @default(uuid())
+  project_id      String    // Currently only for projects
+  name            String
+  target_value    Float
+  current_value   Float
+  unit            String?    // percentage, number, currency, etc.
+  date_recorded   DateTime   @default(now())
+  
+  // Relations
+  project         Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@map("kpis")
+}
+
+// Split reports by owner type
+// Campaign Report table
+model CampaignReport {
+  id              String     @id @default(uuid())
+  campaign_id     String
+  title           String
+  created_by      String
+  created_date    DateTime   @default(now())
+  content         String     @db.Text
+  attachment_link String?
+  
+  // Relations
+  campaign        Campaign   @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@map("campaign_reports")
+}
+
+// Project Report table
+model ProjectReport {
+  id              String     @id @default(uuid())
+  project_id      String
+  title           String
+  created_by      String
+  created_date    DateTime   @default(now())
+  content         String     @db.Text
+  attachment_link String?
+  
+  // Relations
+  project         Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@map("project_reports")
+}
+
+// Task table
+model Task {
+  id              String     @id @default(uuid())
+  project_id      String
+  description     String
+  due_date        DateTime
+  status          String     // Not Started, In Progress, Completed, etc.
+  
+  // Relations
+  project         Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  taskStaff       TaskStaff[]
+
+  @@map("tasks")
+}
+
+// Staff table
+model Staff {
+  id              String     @id @default(uuid())
+  name            String
+  email           String     @unique
+  role            String
+  
+  // Relations
+  taskStaff       TaskStaff[]
+
+  @@map("staff")
+}
+
+// Task_Staff junction table
+model TaskStaff {
+  id              String     @id @default(uuid())
+  task_id         String
+  staff_id        String
+  
+  // Relations
+  task            Task       @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  staff           Staff      @relation(fields: [staff_id], references: [id], onDelete: Cascade)
+
+  @@unique([task_id, staff_id])
+  @@map("task_staff")
+}
