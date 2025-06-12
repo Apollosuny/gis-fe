@@ -8,9 +8,19 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface ProjectTimelineProps {
   className?: string;
+  projects?: {
+    id: string;
+    name: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+  }[];
 }
 
-export function ProjectTimelineChart({ className }: ProjectTimelineProps) {
+export function ProjectTimelineChart({
+  className,
+  projects,
+}: ProjectTimelineProps) {
   // State to handle SSR and hydration
   const [mounted, setMounted] = useState(false);
 
@@ -101,78 +111,58 @@ export function ProjectTimelineChart({ className }: ProjectTimelineProps) {
     colors: ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6'],
   };
 
-  // Current date for reference
-  const now = new Date();
-  const currentYear = now.getFullYear();
+  // Helper function to get color based on status
+  const getStatusColor = (status: string) => {
+    status = status.toLowerCase();
+    if (status === 'completed') return '#3B82F6'; // blue
+    if (status === 'active' || status === 'in progress') return '#10B981'; // green
+    if (status === 'planned' || status === 'planning') return '#F59E0B'; // amber
+    return '#8B5CF6'; // purple for other statuses
+  };
 
-  const series = [
-    {
-      name: 'Projects',
-      data: [
+  // Process project data for timeline
+  const projectData = projects
+    ? projects.map((project) => ({
+        x: project.name,
+        y: [
+          new Date(project.start_date).getTime(),
+          new Date(project.end_date).getTime(),
+        ],
+        status: project.status,
+        fillColor: getStatusColor(project.status),
+      }))
+    : [
+        // Mock data if no real data provided
         {
           x: 'Clean Water Project',
-          y: [
-            new Date(currentYear, 0, 1).getTime(),
-            new Date(currentYear, 5, 30).getTime(),
-          ],
+          y: [new Date(2025, 0, 1).getTime(), new Date(2025, 5, 30).getTime()],
           status: 'In Progress',
           fillColor: '#10B981', // green
         },
         {
           x: 'School Renovation',
-          y: [
-            new Date(currentYear, 2, 1).getTime(),
-            new Date(currentYear, 7, 31).getTime(),
-          ],
+          y: [new Date(2025, 2, 1).getTime(), new Date(2025, 7, 31).getTime()],
           status: 'In Progress',
           fillColor: '#10B981', // green
         },
         {
           x: 'Medical Camp',
-          y: [
-            new Date(currentYear - 1, 9, 1).getTime(),
-            new Date(currentYear - 1, 11, 31).getTime(),
-          ],
+          y: [new Date(2024, 9, 1).getTime(), new Date(2024, 11, 31).getTime()],
           status: 'Completed',
           fillColor: '#3B82F6', // blue
         },
         {
           x: 'Food Distribution',
-          y: [
-            new Date(currentYear, 4, 1).getTime(),
-            new Date(currentYear, 8, 30).getTime(),
-          ],
+          y: [new Date(2025, 4, 1).getTime(), new Date(2025, 8, 30).getTime()],
           status: 'Planning',
           fillColor: '#F59E0B', // amber
         },
-        {
-          x: 'Community Center',
-          y: [
-            new Date(currentYear, 6, 1).getTime(),
-            new Date(currentYear + 1, 2, 31).getTime(),
-          ],
-          status: 'Planning',
-          fillColor: '#F59E0B', // amber
-        },
-        {
-          x: 'Educational Scholarship',
-          y: [
-            new Date(currentYear - 1, 6, 1).getTime(),
-            new Date(currentYear, 5, 31).getTime(),
-          ],
-          status: 'In Progress',
-          fillColor: '#10B981', // green
-        },
-        {
-          x: 'Healthcare Initiative',
-          y: [
-            new Date(currentYear, 8, 1).getTime(),
-            new Date(currentYear + 1, 1, 28).getTime(),
-          ],
-          status: 'Upcoming',
-          fillColor: '#8B5CF6', // purple
-        },
-      ],
+      ];
+
+  const series = [
+    {
+      name: 'Projects',
+      data: projectData,
     },
   ];
 

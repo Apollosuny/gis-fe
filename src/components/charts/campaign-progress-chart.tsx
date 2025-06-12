@@ -6,11 +6,23 @@ import dynamic from 'next/dynamic';
 // Dynamic import to prevent SSR issues with ApexCharts
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-interface CampaignProgressProps {
-  className?: string;
+interface Campaign {
+  id: string;
+  name: string;
+  targetAmount: number;
+  raisedAmount: number;
+  progressPercentage: number;
 }
 
-export function CampaignProgressChart({ className }: CampaignProgressProps) {
+interface CampaignProgressProps {
+  className?: string;
+  campaigns?: Campaign[];
+}
+
+export function CampaignProgressChart({
+  className,
+  campaigns,
+}: CampaignProgressProps) {
   // State to handle SSR and hydration
   const [mounted, setMounted] = useState(false);
 
@@ -18,12 +30,43 @@ export function CampaignProgressChart({ className }: CampaignProgressProps) {
     setMounted(true);
   }, []);
 
-  const campaigns = [
-    { name: 'Clean Water Initiative', progress: 85 },
-    { name: 'Education for All', progress: 65 },
-    { name: 'Health Services', progress: 92 },
-    { name: 'Community Development', progress: 75 },
-    { name: 'Food Security Program', progress: 45 },
+  // Default mock campaigns if no data provided
+  const campaignData = campaigns || [
+    {
+      id: '1',
+      name: 'Clean Water Initiative',
+      targetAmount: 100000,
+      raisedAmount: 85000,
+      progressPercentage: 85,
+    },
+    {
+      id: '2',
+      name: 'Education for All',
+      targetAmount: 80000,
+      raisedAmount: 52000,
+      progressPercentage: 65,
+    },
+    {
+      id: '3',
+      name: 'Health Services',
+      targetAmount: 120000,
+      raisedAmount: 110400,
+      progressPercentage: 92,
+    },
+    {
+      id: '4',
+      name: 'Community Development',
+      targetAmount: 90000,
+      raisedAmount: 67500,
+      progressPercentage: 75,
+    },
+    {
+      id: '5',
+      name: 'Food Security Program',
+      targetAmount: 70000,
+      raisedAmount: 31500,
+      progressPercentage: 45,
+    },
   ];
 
   const options = {
@@ -67,7 +110,7 @@ export function CampaignProgressChart({ className }: CampaignProgressProps) {
       },
     },
     xaxis: {
-      categories: campaigns.map((c) => c.name),
+      categories: campaignData.map((c) => c.name),
       labels: {
         style: {
           colors: mounted
@@ -107,7 +150,7 @@ export function CampaignProgressChart({ className }: CampaignProgressProps) {
   const series = [
     {
       name: 'Progress',
-      data: campaigns.map((c) => c.progress),
+      data: campaignData.map((c) => c.progressPercentage),
     },
   ];
 

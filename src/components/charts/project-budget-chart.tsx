@@ -8,9 +8,14 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface ProjectBudgetProps {
   className?: string;
+  data?: {
+    categories: string[];
+    expenses: number[];
+    allocated: number[];
+  };
 }
 
-export function ProjectBudgetChart({ className }: ProjectBudgetProps) {
+export function ProjectBudgetChart({ className, data }: ProjectBudgetProps) {
   // State to handle SSR and hydration
   const [mounted, setMounted] = useState(false);
 
@@ -48,7 +53,7 @@ export function ProjectBudgetChart({ className }: ProjectBudgetProps) {
       show: false,
     },
     xaxis: {
-      categories: [
+      categories: data?.categories || [
         'Admin',
         'Operations',
         'Marketing',
@@ -90,14 +95,19 @@ export function ProjectBudgetChart({ className }: ProjectBudgetProps) {
     },
   };
 
+  const defaultBudgetData = {
+    allocated: [35000, 48000, 25000, 38000, 20000, 15000, 25000],
+    expenses: [32000, 45000, 27000, 35000, 18000, 14000, 22000],
+  };
+
   const series = [
     {
       name: 'Budget Allocated',
-      data: [35000, 48000, 25000, 38000, 20000, 15000, 25000],
+      data: data?.allocated || defaultBudgetData.allocated,
     },
     {
       name: 'Actual Spent',
-      data: [32000, 45000, 27000, 35000, 18000, 14000, 22000],
+      data: data?.expenses || defaultBudgetData.expenses,
     },
   ];
 

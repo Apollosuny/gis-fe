@@ -8,9 +8,13 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface DonationTrendsProps {
   className?: string;
+  data?: {
+    monthly: number[];
+    targets: number[];
+  };
 }
 
-export function DonationTrendsChart({ className }: DonationTrendsProps) {
+export function DonationTrendsChart({ className, data }: DonationTrendsProps) {
   // State to handle SSR and hydration
   const [mounted, setMounted] = useState(false);
 
@@ -118,22 +122,33 @@ export function DonationTrendsChart({ className }: DonationTrendsProps) {
     },
   };
 
-  const series = [
-    {
-      name: 'Donations',
-      data: [
-        18500, 21400, 25700, 22000, 24000, 28000, 35000, 37500, 42000, 45000,
-        48000, 51000,
-      ],
-    },
-    {
-      name: 'Target',
-      data: [
-        20000, 22000, 25000, 27000, 30000, 33000, 35000, 38000, 40000, 42000,
-        45000, 50000,
-      ],
-    },
-  ];
+  const series = data
+    ? [
+        {
+          name: 'Donations',
+          data: data.monthly,
+        },
+        {
+          name: 'Target',
+          data: data.targets,
+        },
+      ]
+    : [
+        {
+          name: 'Donations',
+          data: [
+            18500, 21400, 25700, 22000, 24000, 28000, 35000, 37500, 42000,
+            45000, 48000, 51000,
+          ],
+        },
+        {
+          name: 'Target',
+          data: [
+            20000, 22000, 25000, 27000, 30000, 33000, 35000, 38000, 40000,
+            42000, 45000, 50000,
+          ],
+        },
+      ];
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) return <div className={`h-[350px] ${className}`} />;

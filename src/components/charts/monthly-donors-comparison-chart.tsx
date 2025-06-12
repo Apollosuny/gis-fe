@@ -8,10 +8,17 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface MonthlyDonorsComparisonProps {
   className?: string;
+  data?: {
+    currentYear: number;
+    previousYear: number;
+    currentYearData: number[];
+    previousYearData: number[];
+  };
 }
 
 export function MonthlyDonorsComparisonChart({
   className,
+  data,
 }: MonthlyDonorsComparisonProps) {
   // State to handle SSR and hydration
   const [mounted, setMounted] = useState(false);
@@ -118,16 +125,27 @@ export function MonthlyDonorsComparisonChart({
     },
   };
 
-  const series = [
-    {
-      name: 'New Donors',
-      data: [120, 145, 165, 132, 175, 215, 245, 255, 272, 280, 295, 310],
-    },
-    {
-      name: 'Recurring Donors',
-      data: [350, 365, 375, 380, 395, 415, 425, 440, 450, 465, 480, 495],
-    },
-  ];
+  const series = data
+    ? [
+        {
+          name: `${data.currentYear} Donors`,
+          data: data.currentYearData,
+        },
+        {
+          name: `${data.previousYear} Donors`,
+          data: data.previousYearData,
+        },
+      ]
+    : [
+        {
+          name: 'Current Year Donors',
+          data: [120, 145, 165, 132, 175, 215, 245, 255, 272, 280, 295, 310],
+        },
+        {
+          name: 'Previous Year Donors',
+          data: [350, 365, 375, 380, 395, 415, 425, 440, 450, 465, 480, 495],
+        },
+      ];
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) return <div className={`h-[350px] ${className}`} />;

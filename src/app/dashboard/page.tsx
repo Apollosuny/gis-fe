@@ -14,8 +14,11 @@ import { DonationSourcesChart } from '@/components/charts/donation-sources-chart
 import { ProjectBudgetChart } from '@/components/charts/project-budget-chart';
 import { MonthlyDonorsComparisonChart } from '@/components/charts/monthly-donors-comparison-chart';
 import { ProjectTimelineChart } from '@/components/charts/project-timeline-chart';
+import { useGetDashboardData } from '@/lib/hooks/use-dashboard';
 
 export default function DashboardPage() {
+  const { data: dashboardData, isLoading, error } = useGetDashboardData();
+
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -25,34 +28,51 @@ export default function DashboardPage() {
     },
   };
 
-  const stats = [
+  // Format numbers for display
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const statsItems = [
     {
       title: 'Total Donations',
-      value: '$124,893',
-      percentChange: '+14%',
+      value: dashboardData
+        ? formatCurrency(dashboardData.stats.totalDonations)
+        : '-',
+      percentChange: '+14%', // Could calculate this from historical data
       icon: <DollarSign />,
       iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
     },
     {
       title: 'Active Campaigns',
-      value: '12',
-      percentChange: '+3',
+      value: dashboardData
+        ? dashboardData.stats.activeCampaigns.toString()
+        : '-',
+      percentChange: '+3', // Could calculate this from historical data
       icon: <TrendingUp />,
       iconBg:
         'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
     },
     {
       title: 'Total Donors',
-      value: '8,492',
-      percentChange: '+8%',
+      value: dashboardData
+        ? dashboardData.stats.totalDonors.toLocaleString()
+        : '-',
+      percentChange: '+8%', // Could calculate this from historical data
       icon: <Users />,
       iconBg:
         'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
     },
     {
       title: 'Active Projects',
-      value: '7',
-      percentChange: '+2',
+      value: dashboardData
+        ? dashboardData.stats.activeProjects.toString()
+        : '-',
+      percentChange: '+2', // Could calculate this from historical data
       icon: <Activity />,
       iconBg:
         'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
@@ -77,7 +97,7 @@ export default function DashboardPage() {
         <h1 className='text-3xl font-bold mb-8'>Dashboard</h1>
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-          {stats.map((stat, index) => (
+          {statsItems.map((stat, index) => (
             <motion.div
               key={index}
               variants={fadeInUp}
@@ -112,7 +132,17 @@ export default function DashboardPage() {
         className='rounded-lg border bg-card p-6 shadow-sm'
       >
         <h2 className='font-semibold text-lg mb-4'>Annual Donation Trends</h2>
-        <DonationTrendsChart />
+        {dashboardData ? (
+          <DonationTrendsChart data={dashboardData.chartData.donationTrends} />
+        ) : (
+          <div className='h-[350px] flex items-center justify-center'>
+            {isLoading
+              ? 'Loading...'
+              : error
+              ? 'Failed to load data'
+              : 'No data available'}
+          </div>
+        )}
       </motion.div>
 
       {/* Two column layout for charts */}
@@ -124,7 +154,17 @@ export default function DashboardPage() {
           className='rounded-lg border bg-card p-6 shadow-sm'
         >
           <h2 className='font-semibold text-lg mb-4'>Campaign Progress</h2>
-          <CampaignProgressChart />
+          {dashboardData ? (
+            <CampaignProgressChart campaigns={dashboardData.campaignsData} />
+          ) : (
+            <div className='h-[350px] flex items-center justify-center'>
+              {isLoading
+                ? 'Loading...'
+                : error
+                ? 'Failed to load data'
+                : 'No data available'}
+            </div>
+          )}
         </motion.div>
 
         <motion.div
@@ -134,7 +174,19 @@ export default function DashboardPage() {
           className='rounded-lg border bg-card p-6 shadow-sm'
         >
           <h2 className='font-semibold text-lg mb-4'>Donation Sources</h2>
-          <DonationSourcesChart />
+          {dashboardData ? (
+            <DonationSourcesChart
+              data={dashboardData.chartData.donationSources}
+            />
+          ) : (
+            <div className='h-[350px] flex items-center justify-center'>
+              {isLoading
+                ? 'Loading...'
+                : error
+                ? 'Failed to load data'
+                : 'No data available'}
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -149,7 +201,17 @@ export default function DashboardPage() {
           <h2 className='font-semibold text-lg mb-4'>
             Project Budget by Category
           </h2>
-          <ProjectBudgetChart />
+          {dashboardData ? (
+            <ProjectBudgetChart data={dashboardData.chartData.projectBudget} />
+          ) : (
+            <div className='h-[350px] flex items-center justify-center'>
+              {isLoading
+                ? 'Loading...'
+                : error
+                ? 'Failed to load data'
+                : 'No data available'}
+            </div>
+          )}
         </motion.div>
 
         <motion.div
@@ -161,7 +223,19 @@ export default function DashboardPage() {
           <h2 className='font-semibold text-lg mb-4'>
             Monthly Donor Comparison
           </h2>
-          <MonthlyDonorsComparisonChart />
+          {dashboardData ? (
+            <MonthlyDonorsComparisonChart
+              data={dashboardData.chartData.monthlyDonorsComparison}
+            />
+          ) : (
+            <div className='h-[350px] flex items-center justify-center'>
+              {isLoading
+                ? 'Loading...'
+                : error
+                ? 'Failed to load data'
+                : 'No data available'}
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -173,7 +247,19 @@ export default function DashboardPage() {
         className='rounded-lg border bg-card p-6 shadow-sm'
       >
         <h2 className='font-semibold text-lg mb-4'>Project Timeline</h2>
-        <ProjectTimelineChart />
+        {dashboardData ? (
+          <ProjectTimelineChart
+            projects={dashboardData.chartData.projectTimeline}
+          />
+        ) : (
+          <div className='h-[350px] flex items-center justify-center'>
+            {isLoading
+              ? 'Loading...'
+              : error
+              ? 'Failed to load data'
+              : 'No data available'}
+          </div>
+        )}
       </motion.div>
 
       {/* Original content in single row */}
@@ -186,30 +272,44 @@ export default function DashboardPage() {
         >
           <div className='p-6'>
             <h2 className='font-semibold text-lg mb-4'>Recent Campaigns</h2>
-            <div className='space-y-4'>
-              {[1, 2, 3].map((_, i) => (
-                <div
-                  key={i}
-                  className='flex items-center justify-between border-b pb-4'
-                >
-                  <div className='flex items-center gap-4'>
-                    <div className='size-10 rounded-md bg-muted flex items-center justify-center'>
-                      <Calendar className='size-5 text-muted-foreground' />
+            {dashboardData?.recentCampaigns ? (
+              <div className='space-y-4'>
+                {dashboardData.recentCampaigns.map((campaign) => (
+                  <div
+                    key={campaign.id}
+                    className='flex items-center justify-between border-b pb-4'
+                  >
+                    <div className='flex items-center gap-4'>
+                      <div className='size-10 rounded-md bg-muted flex items-center justify-center'>
+                        <Calendar className='size-5 text-muted-foreground' />
+                      </div>
+                      <div>
+                        <h4 className='font-medium'>{campaign.name}</h4>
+                        <p className='text-sm text-muted-foreground'>
+                          Target: {formatCurrency(campaign.targetAmount)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className='font-medium'>Campaign {i + 1}</h4>
+                    <div className='text-right'>
+                      <p className='font-medium'>
+                        {formatCurrency(campaign.raisedAmount)}
+                      </p>
                       <p className='text-sm text-muted-foreground'>
-                        Target: $50,000
+                        {Math.round(campaign.progressPercentage)}% of goal
                       </p>
                     </div>
                   </div>
-                  <div className='text-right'>
-                    <p className='font-medium'>$27,500</p>
-                    <p className='text-sm text-muted-foreground'>55% of goal</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className='h-[200px] flex items-center justify-center'>
+                {isLoading
+                  ? 'Loading...'
+                  : error
+                  ? 'Failed to load data'
+                  : 'No campaigns available'}
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -220,24 +320,39 @@ export default function DashboardPage() {
           className='rounded-lg border bg-card p-6 shadow-sm'
         >
           <h2 className='font-semibold text-lg mb-4'>Recent Donors</h2>
-          <div className='space-y-4'>
-            {[1, 2, 3, 4].map((_, i) => (
-              <div key={i} className='flex items-center justify-between'>
-                <div className='flex items-center gap-4'>
-                  <div className='size-8 rounded-full bg-muted flex items-center justify-center'>
-                    <Users className='size-4 text-muted-foreground' />
+          {dashboardData?.recentDonors ? (
+            <div className='space-y-4'>
+              {dashboardData.recentDonors.map((donor) => (
+                <div
+                  key={donor.id}
+                  className='flex items-center justify-between'
+                >
+                  <div className='flex items-center gap-4'>
+                    <div className='size-8 rounded-full bg-muted flex items-center justify-center'>
+                      <Users className='size-4 text-muted-foreground' />
+                    </div>
+                    <div>
+                      <h4 className='font-medium'>{donor.name}</h4>
+                      <p className='text-sm text-muted-foreground'>
+                        {new Date(donor.joinDate).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className='font-medium'>Donor {i + 1}</h4>
-                    <p className='text-sm text-muted-foreground'>2 days ago</p>
-                  </div>
+                  <p className='font-medium text-green-600 dark:text-green-400'>
+                    +{formatCurrency(donor.recentDonation)}
+                  </p>
                 </div>
-                <p className='font-medium text-green-600 dark:text-green-400'>
-                  +$500
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className='h-[200px] flex items-center justify-center'>
+              {isLoading
+                ? 'Loading...'
+                : error
+                ? 'Failed to load data'
+                : 'No donors available'}
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
