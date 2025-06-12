@@ -127,6 +127,7 @@ export const projectUtils = {
         },
         kpis: true,
         projectReports: true,
+        projectFinancialRecords: true,
         tasks: {
           include: {
             taskStaff: {

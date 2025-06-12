@@ -30,6 +30,7 @@
     "framer-motion": "^12.16.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.513.0",
+    "luxon": "^3.6.1",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",

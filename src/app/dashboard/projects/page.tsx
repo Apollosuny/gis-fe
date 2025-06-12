@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
 import { FilterableTable } from '@/components/ui/filterable-table';
@@ -12,116 +13,9 @@ import {
   CheckCircle,
   Plus,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
-
-// Mock projects data
-const projectsData = [
-  {
-    id: '1',
-    name: 'Clean Water Initiative',
-    startDate: '2025-01-15',
-    endDate: '2025-07-15',
-    budget: 45000,
-    spent: 28500,
-    teamSize: 12,
-    completion: 65,
-    status: 'in-progress',
-    kpis: {
-      beneficiaries: 2500,
-      communities: 5,
-    },
-  },
-  {
-    id: '2',
-    name: 'School Renovation',
-    startDate: '2025-03-01',
-    endDate: '2025-08-15',
-    budget: 65000,
-    spent: 32500,
-    teamSize: 18,
-    completion: 48,
-    status: 'in-progress',
-    kpis: {
-      beneficiaries: 1200,
-      communities: 3,
-    },
-  },
-  {
-    id: '3',
-    name: 'Medical Camp',
-    startDate: '2024-10-01',
-    endDate: '2024-12-31',
-    budget: 28000,
-    spent: 28000,
-    teamSize: 24,
-    completion: 100,
-    status: 'completed',
-    kpis: {
-      beneficiaries: 3500,
-      communities: 8,
-    },
-  },
-  {
-    id: '4',
-    name: 'Food Distribution',
-    startDate: '2025-05-01',
-    endDate: '2025-09-30',
-    budget: 35000,
-    spent: 5250,
-    teamSize: 16,
-    completion: 15,
-    status: 'in-progress',
-    kpis: {
-      beneficiaries: 4500,
-      communities: 12,
-    },
-  },
-  {
-    id: '5',
-    name: 'Community Center',
-    startDate: '2025-07-01',
-    endDate: '2026-03-31',
-    budget: 95000,
-    spent: 0,
-    teamSize: 0,
-    completion: 0,
-    status: 'planning',
-    kpis: {
-      beneficiaries: 7500,
-      communities: 4,
-    },
-  },
-  {
-    id: '6',
-    name: 'Educational Scholarships',
-    startDate: '2024-07-01',
-    endDate: '2025-06-30',
-    budget: 55000,
-    spent: 42000,
-    teamSize: 8,
-    completion: 76,
-    status: 'in-progress',
-    kpis: {
-      beneficiaries: 350,
-      communities: 15,
-    },
-  },
-  {
-    id: '7',
-    name: 'Healthcare Initiative',
-    startDate: '2025-09-01',
-    endDate: '2026-02-28',
-    budget: 48000,
-    spent: 0,
-    teamSize: 0,
-    completion: 0,
-    status: 'planning',
-    kpis: {
-      beneficiaries: 5000,
-      communities: 10,
-    },
-  },
-];
+import { useGetProjects } from '@/lib/hooks/use-projects';
 
 // Format currency
 const formatCurrency = (amount: number) => {
@@ -142,24 +36,163 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Calculate summary stats
-const totalBudget = projectsData.reduce(
-  (acc, project) => acc + project.budget,
-  0
-);
-const totalSpent = projectsData.reduce(
-  (acc, project) => acc + project.spent,
-  0
-);
-const activeProjects = projectsData.filter(
-  (project) => project.status === 'in-progress'
-).length;
-const totalBeneficiaries = projectsData.reduce(
-  (acc, project) => acc + project.kpis.beneficiaries,
-  0
-);
+// Project interface for formatted data
+interface FormattedProject {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  spent: number;
+  teamSize: number;
+  completion: number;
+  status: string;
+  kpis: {
+    beneficiaries: number;
+    communities: number;
+  };
+}
 
 export default function ProjectsPage() {
+  const { data: projects, isLoading, error } = useGetProjects();
+  const [formattedProjects, setFormattedProjects] = useState<
+    FormattedProject[]
+  >([]);
+  const [activeProjectsCount, setActiveProjectsCount] = useState(0);
+  const [totalBudget, setTotalBudget] = useState(0);
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [totalBeneficiaries, setTotalBeneficiaries] = useState(0);
+
+  useEffect(() => {
+    if (projects) {
+      // Format the project data from API to match our table structure
+      const formatted = projects.map((project: any) => {
+        // Calculate total financial records
+        let budget =
+          project.projectFinancialRecords
+            ?.filter((record: any) => record.type === 'Budget')
+            .reduce((sum: number, record: any) => sum + record.amount, 0) || 0;
+
+        // If no budget records, use the sum of expenses as an estimate
+        if (budget === 0) {
+          const totalExpenses =
+            project.projectFinancialRecords
+              ?.filter((record: any) => record.type === 'Expense')
+              .reduce((sum: number, record: any) => sum + record.amount, 0) ||
+            0;
+
+          // Set budget to slightly higher than expenses or default value
+          budget = totalExpenses > 0 ? Math.round(totalExpenses * 1.2) : 10000;
+        }
+
+        const spent =
+          project.projectFinancialRecords
+            ?.filter((record: any) => record.type === 'Expense')
+            .reduce((sum: number, record: any) => sum + record.amount, 0) || 0;
+
+        // Calculate completion based on date progress
+        const startDate = new Date(project.start_date);
+        const endDate = new Date(project.end_date);
+        const currentDate = new Date();
+
+        let completion = 0;
+        if (project.status.toLowerCase() === 'completed') {
+          completion = 100;
+        } else if (project.status.toLowerCase() === 'planning') {
+          completion = 0;
+        } else {
+          const totalDuration = endDate.getTime() - startDate.getTime();
+          const elapsedDuration = currentDate.getTime() - startDate.getTime();
+          completion = Math.round((elapsedDuration / totalDuration) * 100);
+          completion = Math.min(Math.max(completion, 0), 100); // Clamp between 0-100
+        }
+
+        // Calculate team size based on task assignments
+        const teamMembers = new Set<string>();
+        project.tasks?.forEach((task: any) => {
+          task.taskStaff?.forEach((staffAssignment: any) => {
+            teamMembers.add(staffAssignment.staff_id);
+          });
+        });
+
+        // Get beneficiaries data from KPIs or project-beneficiary relations
+        let beneficiariesCount = 0;
+        let communitiesCount = 0;
+
+        // Check for KPIs with beneficiary data
+        const beneficiaryKPI = project.kpis?.find((kpi: any) =>
+          kpi.name.toLowerCase().includes('beneficiar')
+        );
+
+        if (beneficiaryKPI) {
+          beneficiariesCount =
+            parseInt(String(beneficiaryKPI.current_value)) || 0;
+        } else {
+          // If no KPI, count number of beneficiaries from relations
+          beneficiariesCount = project.projectBeneficiaries?.length || 0;
+        }
+
+        // Look for community KPI
+        const communityKPI = project.kpis?.find((kpi: any) =>
+          kpi.name.toLowerCase().includes('communit')
+        );
+        if (communityKPI) {
+          communitiesCount = parseInt(String(communityKPI.current_value)) || 0;
+        }
+
+        // Map status to our frontend values
+        let status = project.status.toLowerCase();
+        // Convert statuses to match our frontend values if needed
+        if (status === 'active') status = 'in-progress';
+        if (status === 'planned') status = 'planning';
+        if (status === 'in progress') status = 'in-progress';
+
+        return {
+          id: project.id,
+          name: project.name,
+          startDate: project.start_date,
+          endDate: project.end_date,
+          budget,
+          spent,
+          teamSize: teamMembers.size,
+          completion,
+          status,
+          kpis: {
+            beneficiaries: beneficiariesCount,
+            communities: communitiesCount,
+          },
+        };
+      });
+
+      setFormattedProjects(formatted);
+
+      // Calculate summary statistics
+      const activeProjects = formatted.filter(
+        (project: FormattedProject) => project.status === 'in-progress'
+      ).length;
+      setActiveProjectsCount(activeProjects);
+
+      const totalBudgetAmount = formatted.reduce(
+        (sum: number, project: FormattedProject) => sum + project.budget,
+        0
+      );
+      setTotalBudget(totalBudgetAmount);
+
+      const totalSpentAmount = formatted.reduce(
+        (sum: number, project: FormattedProject) => sum + project.spent,
+        0
+      );
+      setTotalSpent(totalSpentAmount);
+
+      const beneficiariesCount = formatted.reduce(
+        (sum: number, project: FormattedProject) =>
+          sum + project.kpis.beneficiaries,
+        0
+      );
+      setTotalBeneficiaries(beneficiariesCount);
+    }
+  }, [projects]);
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -199,7 +232,6 @@ export default function ProjectsPage() {
       key: 'spent',
       title: 'Spent',
       sortable: true,
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       render: (value: number, item: any) => (
         <div>
           {formatCurrency(value)}
@@ -274,7 +306,6 @@ export default function ProjectsPage() {
       },
     },
     {
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'actions' as any,
       title: 'Actions',
       sortable: false,
@@ -300,6 +331,24 @@ export default function ProjectsPage() {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className='flex items-center justify-center h-full'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='text-center py-10'>
+        <p className='text-red-500'>
+          Error loading projects data. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-8 py-8'>
       <PageHeader
@@ -321,7 +370,7 @@ export default function ProjectsPage() {
       >
         <StatsCard
           title='Active Projects'
-          value={activeProjects}
+          value={activeProjectsCount}
           icon={<FileText className='h-5 w-5' />}
           delay={1}
         />
@@ -333,14 +382,20 @@ export default function ProjectsPage() {
         />
         <StatsCard
           title='Budget Utilization'
-          value={`${Math.round((totalSpent / totalBudget) * 100)}%`}
+          value={
+            totalBudget > 0
+              ? `${Math.round((totalSpent / totalBudget) * 100)}%`
+              : '0%'
+          }
           description={`${formatCurrency(totalSpent)} spent of ${formatCurrency(
             totalBudget
           )}`}
           icon={<AlertTriangle className='h-5 w-5' />}
           trend={
-            totalSpent / totalBudget > 0.9
+            totalBudget > 0 && totalSpent / totalBudget > 0.9
               ? { value: 'Near Budget Limit', isPositive: false }
+              : totalBudget > 0 && totalSpent / totalBudget < 0.3
+              ? { value: 'Under Budget', isPositive: true }
               : undefined
           }
           delay={3}
@@ -349,7 +404,17 @@ export default function ProjectsPage() {
           title='Total Beneficiaries'
           value={totalBeneficiaries.toLocaleString()}
           icon={<Users className='h-5 w-5' />}
-          trend={{ value: '+15% this quarter', isPositive: true }}
+          trend={
+            totalBeneficiaries > 0
+              ? {
+                  value: `Impacting ${formattedProjects.reduce(
+                    (sum, project) => sum + (project.kpis?.communities || 0),
+                    0
+                  )} communities`,
+                  isPositive: true,
+                }
+              : undefined
+          }
           delay={4}
         />
       </motion.div>
@@ -362,7 +427,7 @@ export default function ProjectsPage() {
         className='rounded-lg border bg-card p-6 shadow-sm'
       >
         <h2 className='font-semibold text-lg mb-4'>Project Timeline</h2>
-        <ProjectTimelineChart />
+        <ProjectTimelineChart projects={formattedProjects} />
       </motion.div>
 
       {/* Projects Table */}
@@ -373,7 +438,7 @@ export default function ProjectsPage() {
       >
         <div className='bg-background rounded-lg border shadow-sm'>
           <FilterableTable
-            data={projectsData}
+            data={formattedProjects}
             columns={columns}
             initialSortColumn='startDate'
             initialSortDirection='desc'

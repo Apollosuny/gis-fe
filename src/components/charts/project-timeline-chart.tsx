@@ -2,19 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { DateTime } from 'luxon';
 
 // Dynamic import to prevent SSR issues with ApexCharts
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
+interface ProjectData {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  start_date?: string;
+  end_date?: string;
+  status: string;
+  budget?: number;
+  spent?: number;
+  teamSize?: number;
+  completion?: number;
+  kpis?: {
+    beneficiaries: number;
+    communities: number;
+  };
+}
+
 interface ProjectTimelineProps {
   className?: string;
-  projects?: {
-    id: string;
-    name: string;
-    start_date: string;
-    end_date: string;
-    status: string;
-  }[];
+  projects?: ProjectData[];
 }
 
 export function ProjectTimelineChart({
@@ -96,16 +109,55 @@ export function ProjectTimelineChart({
       /* eslint-disable-next-line */
       custom: function ({ series, seriesIndex, dataPointIndex, w }: any) {
         const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-        const startDate = new Date(data.x).toLocaleDateString();
-        const endDate = new Date(data.x2).toLocaleDateString();
 
-        return `
-          <div class="p-2 bg-background">
-            <div class="font-medium">${data.y}</div>
-            <div class="text-xs text-muted-foreground">${startDate} to ${endDate}</div>
-            <div class="text-xs text-muted-foreground">Status: ${data.status}</div>
-          </div>
-        `;
+        try {
+          // Format dates using Luxon - properly handling timestamps
+          const startTimestamp = data.y[0];
+          const endTimestamp = data.y[1];
+
+          // Ensure timestamps are valid numbers
+          const validStartTimestamp =
+            typeof startTimestamp === 'number'
+              ? startTimestamp
+              : Number(startTimestamp);
+          const validEndTimestamp =
+            typeof endTimestamp === 'number'
+              ? endTimestamp
+              : Number(endTimestamp);
+
+          // Check if timestamps are valid
+          if (isNaN(validStartTimestamp) || isNaN(validEndTimestamp)) {
+            throw new Error('Invalid timestamp values');
+          }
+
+          const startDate = DateTime.fromMillis(validStartTimestamp)
+            .setLocale('en-US')
+            .toFormat('LLL dd, yyyy');
+          const endDate = DateTime.fromMillis(validEndTimestamp)
+            .setLocale('en-US')
+            .toFormat('LLL dd, yyyy');
+
+          return `
+            <div class="p-2 bg-background">
+              <div class="font-medium">${data.x}</div>
+              <div class="text-xs text-muted-foreground">${startDate} to ${endDate}</div>
+              <div class="text-xs text-muted-foreground">Status: ${
+                data.status
+              }</div>
+              ${
+                data.completion !== undefined
+                  ? `<div class="text-xs text-muted-foreground">Completion: ${data.completion}%</div>`
+                  : ''
+              }
+            </div>
+          `;
+        } catch (err) {
+          console.error('Error formatting timeline dates:', err);
+          return `<div class="p-2 bg-background">
+            <div class="font-medium">${data.x}</div>
+            <div class="text-xs text-muted-foreground">Date error</div>
+          </div>`;
+        }
       },
     },
     colors: ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6'],
@@ -115,22 +167,83 @@ export function ProjectTimelineChart({
   const getStatusColor = (status: string) => {
     status = status.toLowerCase();
     if (status === 'completed') return '#3B82F6'; // blue
-    if (status === 'active' || status === 'in progress') return '#10B981'; // green
+    if (status === 'active' || status === 'in-progress') return '#10B981'; // green
     if (status === 'planned' || status === 'planning') return '#F59E0B'; // amber
+    if (status === 'at-risk') return '#EF4444'; // red
     return '#8B5CF6'; // purple for other statuses
   };
 
   // Process project data for timeline
   const projectData = projects
-    ? projects.map((project) => ({
-        x: project.name,
-        y: [
-          new Date(project.start_date).getTime(),
-          new Date(project.end_date).getTime(),
-        ],
-        status: project.status,
-        fillColor: getStatusColor(project.status),
-      }))
+    ? projects.map((project) => {
+        try {
+          // Make sure dates are parsed correctly
+          const startDate = project.startDate || project.start_date || '';
+          const endDate = project.endDate || project.end_date || '';
+
+          console.log('Project:', project.name);
+          console.log('Raw dates:', { startDate, endDate });
+
+          // Try parsing with Luxon in different formats
+          let startDateTime = DateTime.fromISO(startDate);
+          if (!startDateTime.isValid) {
+            startDateTime = DateTime.fromFormat(startDate, 'yyyy-MM-dd');
+          }
+          if (!startDateTime.isValid) {
+            startDateTime = DateTime.fromFormat(
+              startDate,
+              "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+            );
+          }
+
+          let endDateTime = DateTime.fromISO(endDate);
+          if (!endDateTime.isValid) {
+            endDateTime = DateTime.fromFormat(endDate, 'yyyy-MM-dd');
+          }
+          if (!endDateTime.isValid) {
+            endDateTime = DateTime.fromFormat(
+              endDate,
+              "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+            );
+          }
+
+          console.log('Parsed dates valid?', {
+            startValid: startDateTime.isValid,
+            endValid: endDateTime.isValid,
+          });
+
+          // Fallback to JavaScript Date if Luxon parsing fails
+          const startTimestamp = startDateTime.isValid
+            ? startDateTime.toMillis()
+            : new Date(startDate).getTime();
+
+          const endTimestamp = endDateTime.isValid
+            ? endDateTime.toMillis()
+            : new Date(endDate).getTime();
+
+          return {
+            x: project.name,
+            y: [startTimestamp, endTimestamp],
+            status: project.status.replace('-', ' '),
+            fillColor: getStatusColor(project.status),
+            completion: project.completion,
+          };
+        } catch (err) {
+          console.error(`Error processing project ${project.name}:`, err);
+          // Return a fallback with current date if there's an error
+          const now = DateTime.now();
+          return {
+            x: project.name,
+            y: [
+              now.minus({ months: 1 }).toMillis(),
+              now.plus({ months: 1 }).toMillis(),
+            ],
+            status: project.status.replace('-', ' '),
+            fillColor: getStatusColor(project.status),
+            completion: project.completion,
+          };
+        }
+      })
     : [
         // Mock data if no real data provided
         {
