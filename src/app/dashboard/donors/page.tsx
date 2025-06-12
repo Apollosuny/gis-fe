@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
 import { FilterableTable } from '@/components/ui/filterable-table';
@@ -12,131 +13,9 @@ import {
   Mail,
   Phone,
   Plus,
+  Loader2,
 } from 'lucide-react';
-
-// Mock donors data
-const donorsData = [
-  {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    totalDonated: 5200,
-    lastDonation: '2025-05-28',
-    donationCount: 8,
-    type: 'individual',
-    status: 'active',
-  },
-  {
-    id: '2',
-    firstName: 'ABC',
-    lastName: 'Corporation',
-    email: 'contact@abccorp.com',
-    phone: '+1 (555) 987-6543',
-    totalDonated: 25000,
-    lastDonation: '2025-06-02',
-    donationCount: 3,
-    type: 'corporate',
-    status: 'active',
-  },
-  {
-    id: '3',
-    firstName: 'Emma',
-    lastName: 'Johnson',
-    email: 'emma.j@example.com',
-    phone: '+1 (555) 234-5678',
-    totalDonated: 850,
-    lastDonation: '2025-05-15',
-    donationCount: 2,
-    type: 'individual',
-    status: 'active',
-  },
-  {
-    id: '4',
-    firstName: 'Tech',
-    lastName: 'Innovate Inc.',
-    email: 'donations@techinnovate.com',
-    phone: '+1 (555) 876-5432',
-    totalDonated: 15000,
-    lastDonation: '2025-04-22',
-    donationCount: 1,
-    type: 'corporate',
-    status: 'active',
-  },
-  {
-    id: '5',
-    firstName: 'Michael',
-    lastName: 'Brown',
-    email: 'michael.b@example.com',
-    phone: '+1 (555) 345-6789',
-    totalDonated: 3200,
-    lastDonation: '2025-05-30',
-    donationCount: 6,
-    type: 'individual',
-    status: 'active',
-  },
-  {
-    id: '6',
-    firstName: 'Sarah',
-    lastName: 'Williams',
-    email: 'sarah.w@example.com',
-    phone: '+1 (555) 456-7890',
-    totalDonated: 2150,
-    lastDonation: '2025-06-01',
-    donationCount: 4,
-    type: 'individual',
-    status: 'active',
-  },
-  {
-    id: '7',
-    firstName: 'Global',
-    lastName: 'Foundation',
-    email: 'info@globalfoundation.org',
-    phone: '+1 (555) 765-4321',
-    totalDonated: 35000,
-    lastDonation: '2025-05-20',
-    donationCount: 5,
-    type: 'organization',
-    status: 'active',
-  },
-  {
-    id: '8',
-    firstName: 'Robert',
-    lastName: 'Davis',
-    email: 'robert.d@example.com',
-    phone: '+1 (555) 567-8901',
-    totalDonated: 1800,
-    lastDonation: '2025-04-15',
-    donationCount: 3,
-    type: 'individual',
-    status: 'inactive',
-  },
-  {
-    id: '9',
-    firstName: 'Community',
-    lastName: 'Trust',
-    email: 'grants@communitytrust.org',
-    phone: '+1 (555) 654-3210',
-    totalDonated: 28000,
-    lastDonation: '2025-03-28',
-    donationCount: 2,
-    type: 'organization',
-    status: 'active',
-  },
-  {
-    id: '10',
-    firstName: 'Jessica',
-    lastName: 'Wilson',
-    email: 'jessica.w@example.com',
-    phone: '+1 (555) 678-9012',
-    totalDonated: 950,
-    lastDonation: '2025-05-25',
-    donationCount: 1,
-    type: 'individual',
-    status: 'active',
-  },
-];
+import { useGetDonors } from '@/lib/hooks/use-donors';
 
 // Format currency
 const formatCurrency = (amount: number) => {
@@ -157,29 +36,102 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Calculate summary stats
-const activeDonors = donorsData.filter(
-  (donor) => donor.status === 'active'
-).length;
-const totalDonated = donorsData.reduce(
-  (acc, donor) => acc + donor.totalDonated,
-  0
-);
-const individualDonors = donorsData.filter(
-  (donor) => donor.type === 'individual'
-).length;
-const averageDonation =
-  totalDonated /
-  donorsData.reduce((acc, donor) => acc + donor.donationCount, 0);
+interface FormattedDonor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  totalDonated: number;
+  lastDonation: string;
+  donationCount: number;
+  type: string;
+  status: string;
+}
 
 export default function DonorsPage() {
+  const { data: donors, isLoading, error } = useGetDonors();
+  const [formattedDonors, setFormattedDonors] = useState<FormattedDonor[]>([]);
+  const [activeDonorsCount, setActiveDonorsCount] = useState(0);
+  const [totalDonated, setTotalDonated] = useState(0);
+  const [individualDonorsCount, setIndividualDonorsCount] = useState(0);
+  const [averageDonation, setAverageDonation] = useState(0);
+
+  useEffect(() => {
+    if (donors) {
+      // Format the donor data from API to match our table structure
+      const formatted = donors.map((donor: any) => {
+        // Calculate total donated amount for this donor
+        const total = donor.donations.reduce(
+          (sum: number, donation: any) => sum + donation.amount,
+          0
+        );
+
+        // Get the most recent donation date
+        let lastDonationDate = '';
+        if (donor.donations.length > 0) {
+          const sortedDonations = [...donor.donations].sort(
+            (a: any, b: any) =>
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          lastDonationDate = sortedDonations[0].date;
+        }
+
+        // Split name into first and last name
+        const nameParts = donor.name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // All donors from API are considered active for this example
+        // In a real application, you might have a status field
+        return {
+          id: donor.id,
+          firstName,
+          lastName,
+          email: donor.email || '',
+          phone: donor.phone || '',
+          totalDonated: total,
+          lastDonation: lastDonationDate || new Date().toISOString(),
+          donationCount: donor.donations.length,
+          type: donor.type.toLowerCase(),
+          status: 'active',
+        };
+      });
+
+      setFormattedDonors(formatted);
+
+      // Calculate summary statistics
+      const activeDonors = formatted.filter(
+        (donor: FormattedDonor) => donor.status === 'active'
+      ).length;
+      setActiveDonorsCount(activeDonors);
+
+      const totalAmount = formatted.reduce(
+        (sum: number, donor: FormattedDonor) => sum + donor.totalDonated,
+        0
+      );
+      setTotalDonated(totalAmount);
+
+      const individualDonors = formatted.filter(
+        (donor: FormattedDonor) => donor.type === 'individual'
+      ).length;
+      setIndividualDonorsCount(individualDonors);
+
+      const totalDonationCount = formatted.reduce(
+        (sum: number, donor: FormattedDonor) => sum + donor.donationCount,
+        0
+      );
+      setAverageDonation(
+        totalDonationCount > 0 ? totalAmount / totalDonationCount : 0
+      );
+    }
+  }, [donors]);
+
   const columns = [
     {
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'fullName' as any,
       title: 'Donor Name',
       sortable: true,
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       render: (value: any, item: any) => `${item.firstName} ${item.lastName}`,
     },
     {
@@ -234,7 +186,6 @@ export default function DonorsPage() {
       },
     },
     {
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       key: 'actions' as any,
       title: 'Actions',
       sortable: false,
@@ -280,6 +231,24 @@ export default function DonorsPage() {
     },
   };
 
+  if (isLoading) {
+    return (
+      <div className='flex items-center justify-center h-full'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='text-center py-10'>
+        <p className='text-red-500'>
+          Error loading donors data. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-8 py-8'>
       <PageHeader
@@ -301,7 +270,7 @@ export default function DonorsPage() {
       >
         <StatsCard
           title='Active Donors'
-          value={activeDonors}
+          value={activeDonorsCount}
           icon={<Users className='h-5 w-5' />}
           trend={{ value: '+5 this month', isPositive: true }}
           delay={1}
@@ -315,10 +284,14 @@ export default function DonorsPage() {
         />
         <StatsCard
           title='Individual Donors'
-          value={individualDonors}
-          description={`${Math.round(
-            (individualDonors / activeDonors) * 100
-          )}% of all donors`}
+          value={individualDonorsCount}
+          description={
+            activeDonorsCount > 0
+              ? `${Math.round(
+                  (individualDonorsCount / activeDonorsCount) * 100
+                )}% of all donors`
+              : ''
+          }
           icon={<UserPlus className='h-5 w-5' />}
           delay={3}
         />
@@ -338,7 +311,7 @@ export default function DonorsPage() {
       >
         <div className='bg-background rounded-lg border shadow-sm'>
           <FilterableTable
-            data={donorsData}
+            data={formattedDonors}
             columns={columns}
             initialSortColumn='lastDonation'
             initialSortDirection='desc'
