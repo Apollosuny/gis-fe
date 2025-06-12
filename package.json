@@ -13,6 +13,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:enhanced": "tsx prisma/seed-enhanced.ts",
     "db:setup": "chmod +x ./scripts/setup-db.sh && ./scripts/setup-db.sh",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@faker-js/faker": "^9.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
