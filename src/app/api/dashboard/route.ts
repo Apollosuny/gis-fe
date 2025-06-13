@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { donorUtils, campaignUtils, projectUtils } from '@/lib/db-utils';
+import { donorUtils } from '@/lib/db-utils';
 
 export async function GET() {
   try {

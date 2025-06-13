@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatsCard } from '@/components/ui/stats-card';
 import { FilterableTable } from '@/components/ui/filterable-table';
 import { Target, Users, TrendingUp, Calendar, Plus, Mail } from 'lucide-react';
-import { useState } from 'react';
 import { Campaign, useGetCampaigns } from '@/lib/hooks/use-campaigns';
 
 // Prepare campaign data for the table
@@ -21,7 +20,7 @@ interface CampaignTableItem {
 }
 
 const CampaignsPage = () => {
-  const { data: campaigns, isLoading, isError } = useGetCampaigns();
+  const { data: campaigns } = useGetCampaigns();
 
   // Transform API data to table format
   const campaignsData: CampaignTableItem[] = campaigns?.map(

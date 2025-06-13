@@ -1,12 +1,4 @@
 import { prisma } from './db';
-import {
-  Donor,
-  Campaign,
-  Project,
-  Staff,
-  Beneficiary,
-  KPI,
-} from '../../src/generated/prisma';
 
 // Donor utilities
 export const donorUtils = {

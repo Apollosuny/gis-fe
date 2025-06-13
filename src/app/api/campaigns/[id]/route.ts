@@ -6,9 +6,12 @@ interface Params {
   id: string;
 }
 
-export async function GET(request: Request, { params }: { params: Params }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<Params> }
+) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -36,9 +39,12 @@ export async function GET(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<Params> }
+) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Validate required fields
@@ -87,9 +93,12 @@ export async function PUT(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Params }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<Params> }
+) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Check if campaign exists
     const existingCampaign = await prisma.campaign.findUnique({

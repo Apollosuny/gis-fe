@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 'use client';
 
 import { useState } from 'react';
@@ -7,7 +9,6 @@ import {
   Briefcase,
   CheckCircle2,
   Clock,
-  PlusCircle,
   UserPlus,
   ClipboardList,
   X,

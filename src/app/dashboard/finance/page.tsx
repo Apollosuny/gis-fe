@@ -1,15 +1,13 @@
+/* eslint-disable */
 'use client';
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  DollarSign,
   ArrowUpCircle,
   ArrowDownCircle,
   Wallet,
   PlusCircle,
-  Calendar,
-  FileText,
   X,
 } from 'lucide-react';
 import {

@@ -98,7 +98,7 @@ export const useUpdateCampaign = (id: string) => {
       const response = await axios.put(`/api/campaigns/${id}`, campaignData);
       return response.data.campaign;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Update specific campaign in the cache
       queryClient.invalidateQueries({ queryKey: ['campaigns', id] });
       // Update all campaigns list
